@@ -35,6 +35,15 @@ class DatabaseConnectionError(RuntimeError):
     """Raised when a PostgreSQL connection cannot be established."""
 
 
+class MissingDependencyError(DatabaseConnectionError):
+    """Raised when a required dependency (e.g. psycopg2) is not installed.
+
+    Subclass of DatabaseConnectionError so existing callers that catch
+    connection-layer failures still handle it, but retry logic treats this
+    as deterministic — missing drivers cannot be fixed by backoff.
+    """
+
+
 @dataclass(frozen=True)
 class DBConfig:
     """Database connection configuration, sourced from environment variables."""
@@ -112,7 +121,7 @@ def get_connection(config: DBConfig | None = None):
     try:
         import psycopg2
     except ImportError as exc:  # pragma: no cover - environment-dependent
-        raise DatabaseConnectionError(
+        raise MissingDependencyError(
             "psycopg2 is not installed. Add psycopg2-binary to the "
             "environment (see requirements.txt) before connecting to "
             "PostgreSQL."

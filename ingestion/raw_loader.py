@@ -43,6 +43,7 @@ from typing import Callable, TypeVar
 from database.connection import (
     DatabaseConfigError,
     DatabaseConnectionError,
+    MissingDependencyError,
     transaction,
 )
 from ingestion.audit import AuditRecord, get_latest_successful_checksum, insert_audit_record
@@ -139,9 +140,20 @@ def _is_transient_db_error(exc: BaseException) -> bool:
     """True only for transient infrastructure/database failures.
 
     Deterministic failures (validation errors, row-count mismatches,
-    programming errors) must never be retried — only connection drops,
-    timeouts, and similar operational errors.
+    missing dependencies, configuration errors, programming errors) must
+    never be retried — only connection drops, timeouts, and similar
+    operational errors.
     """
+    if isinstance(
+        exc,
+        (
+            MissingDependencyError,
+            DatabaseConfigError,
+            DeterministicIngestionError,
+            ImportError,
+        ),
+    ):
+        return False
     if isinstance(exc, DatabaseConnectionError):
         return True
     try:

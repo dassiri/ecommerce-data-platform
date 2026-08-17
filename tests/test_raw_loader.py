@@ -30,6 +30,7 @@ from unittest import mock
 from database.connection import (
     DatabaseConfigError,
     DatabaseConnectionError,
+    MissingDependencyError,
     close_connection,
     get_connection,
 )
@@ -166,6 +167,45 @@ class TestRetryBehavior(unittest.TestCase):
                 deterministic_failure, dataset_name="users", sleep_fn=lambda s: None
             )
         self.assertEqual(calls["n"], 1)  # never retried
+
+    def test_missing_dependency_error_is_not_retried(self):
+        calls = {"n": 0}
+
+        def missing_driver():
+            calls["n"] += 1
+            raise MissingDependencyError("psycopg2 is not installed")
+
+        with self.assertRaises(MissingDependencyError):
+            rl._run_with_retry(
+                missing_driver, dataset_name="users", sleep_fn=lambda s: None
+            )
+        self.assertEqual(calls["n"], 1)
+
+    def test_bare_import_error_is_not_retried(self):
+        calls = {"n": 0}
+
+        def import_failure():
+            calls["n"] += 1
+            raise ImportError("No module named 'psycopg2'")
+
+        with self.assertRaises(ImportError):
+            rl._run_with_retry(
+                import_failure, dataset_name="users", sleep_fn=lambda s: None
+            )
+        self.assertEqual(calls["n"], 1)
+
+    def test_database_config_error_is_not_retried(self):
+        calls = {"n": 0}
+
+        def bad_config():
+            calls["n"] += 1
+            raise DatabaseConfigError("Missing required environment variable(s)")
+
+        with self.assertRaises(DatabaseConfigError):
+            rl._run_with_retry(
+                bad_config, dataset_name="users", sleep_fn=lambda s: None
+            )
+        self.assertEqual(calls["n"], 1)
 
 
 # ---------------------------------------------------------------------------

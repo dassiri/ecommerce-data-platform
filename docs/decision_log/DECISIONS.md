@@ -76,13 +76,27 @@ Full rationale for all of the above: `docs/architecture/raw_schema.md`.
 
 ### DEC-014 — Transient-failure classification is narrow and explicit
 
-- **Decision:** only `database.connection.DatabaseConnectionError` and
-  `psycopg2.OperationalError` are treated as retryable; every other
-  exception (contract validation, `DeterministicIngestionError` for a
-  row-count mismatch, programming errors) fails immediately without retry.
+- **Decision:** only genuine transient `database.connection.DatabaseConnectionError`
+  (excluding `MissingDependencyError`) and `psycopg2.OperationalError` are
+  treated as retryable; every other exception fails immediately without
+  retry, including:
+  - contract validation failures
+  - `DeterministicIngestionError` (e.g. row-count mismatch)
+  - `database.connection.DatabaseConfigError`
+  - `database.connection.MissingDependencyError` (missing psycopg2 dependency
+    is deterministic and must not be retried)
+  - bare `ImportError` if it reaches the retry classifier
+  - programming errors
 - **Rationale:** requirement 7 is explicit that deterministic
   validation/schema failures must not be retried — retrying them would
-  waste attempts on failures no retry can fix.
+  waste attempts on failures no retry can fix. A missing database driver
+  is an environment/setup problem, not a transient outage; retrying it
+  would delay failure without improving outcomes.
+- **Implementation:** `get_connection()` raises `MissingDependencyError`
+  (subclass of `DatabaseConnectionError`) when psycopg2 is unavailable;
+  `_is_transient_db_error` in `ingestion/raw_loader.py` excludes
+  `MissingDependencyError`, `DatabaseConfigError`, `DeterministicIngestionError`,
+  and bare `ImportError` from retry.
 - **Status:** Implemented, unit-tested (no DB required —
   `TestRetryBehavior`).
 
