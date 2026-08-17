@@ -1,0 +1,65 @@
+dataset_name: orders
+source_file: orders.csv
+description: >
+  Customer orders. One row per order. Parent entity for order_items and
+  referenced by reviews.
+
+grain: One row per order_id.
+
+primary_key:
+  - order_id
+
+foreign_keys:
+  - column: user_id
+    references_dataset: users
+    references_column: user_id
+
+columns:
+  - name: order_id
+    data_type: string
+    nullable: false
+    constraints:
+      - unique
+      - pattern: "^O[0-9]{8}$"
+    source_notes: "20,000 rows, 20,000 distinct values (100% unique)."
+
+  - name: user_id
+    data_type: string
+    nullable: false
+    constraints:
+      - pattern: "^U[0-9]{6}$"
+    source_notes: >
+      100% of order user_ids resolve to an existing users.user_id in the
+      profiled extract (0 orphans).
+
+  - name: order_date
+    data_type: timestamp
+    nullable: false
+    constraints:
+      - format: ISO8601
+
+  - name: order_status
+    data_type: string
+    nullable: false
+    constraints:
+      - accepted_values: [processing, completed, cancelled, returned, shipped]
+    accepted_values: [processing, completed, cancelled, returned, shipped]
+
+  - name: total_amount
+    data_type: decimal
+    nullable: false
+    constraints:
+      - min: 0
+        exclusive: true
+    source_notes: "Observed range: 1.11 to 7950.74."
+
+known_data_quality_findings:
+  - id: no_change_tracking_column
+    description: >
+      No updated_at / change-tracking column exists. order_status
+      transitions (e.g. processing -> shipped -> completed) cannot be
+      reconstructed from this source alone; only the current status is
+      known. Carried forward from the Step 1 assessment.
+
+deferred_business_rules:
+  - "total_amount must equal the sum of related order_items.item_total (verified 0 mismatches out of 20,000 orders in the profiled extract; enforced as a Data Quality check, not a schema constraint, since it is a cross-dataset reconciliation rule)."

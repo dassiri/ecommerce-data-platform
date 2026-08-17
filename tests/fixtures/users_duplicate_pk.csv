@@ -1,0 +1,3 @@
+user_id,name,email,gender,city,signup_date
+U000001,Test One,test1@example.com,Male,Testville,2024-01-01
+U000001,Test One Dup,test1dup@example.com,Female,Testville,2024-02-02

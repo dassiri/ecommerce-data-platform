@@ -1,0 +1,66 @@
+dataset_name: events
+source_file: events.csv
+description: >
+  User interaction events against products (view/cart/wishlist/purchase
+  click-stream style events). One row per event.
+
+grain: One row per event_id.
+
+primary_key:
+  - event_id
+
+foreign_keys:
+  - column: user_id
+    references_dataset: users
+    references_column: user_id
+  - column: product_id
+    references_dataset: products
+    references_column: product_id
+
+columns:
+  - name: event_id
+    data_type: string
+    nullable: false
+    constraints:
+      - unique
+      - pattern: "^E[0-9]{8}$"
+    source_notes: "80,000 rows, 80,000 distinct values (100% unique)."
+
+  - name: user_id
+    data_type: string
+    nullable: false
+    constraints:
+      - pattern: "^U[0-9]{6}$"
+    source_notes: "100% resolve to an existing users.user_id (0 orphans)."
+
+  - name: product_id
+    data_type: string
+    nullable: false
+    constraints:
+      - pattern: "^P[0-9]{6}$"
+    source_notes: "100% resolve to an existing products.product_id (0 orphans)."
+
+  - name: event_type
+    data_type: string
+    nullable: false
+    constraints:
+      - accepted_values: [view, cart, wishlist, purchase]
+    accepted_values: [view, cart, wishlist, purchase]
+
+  - name: event_timestamp
+    data_type: timestamp
+    nullable: false
+    constraints:
+      - format: ISO8601
+
+known_data_quality_findings:
+  - id: no_order_linkage
+    description: >
+      events.csv has no order_id / order_item_id column, so "purchase"
+      events cannot be directly joined to a specific orders/order_items
+      row. Any reconciliation between purchase-event volume and order
+      volume is an approximate, deferred business analysis, not a
+      schema-enforceable relationship.
+
+deferred_business_rules:
+  - "Approximate reconciliation of purchase event_type counts against orders/order_items volume (deferred to Data Quality; no direct key to join on)."

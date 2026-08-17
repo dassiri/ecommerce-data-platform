@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+
+# Source CSVs are immutable and must never be committed to the repository.
+data/raw_source/*.csv
+
+# Local environment configuration (real credentials) — never commit.
+.env

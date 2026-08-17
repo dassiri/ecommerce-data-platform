@@ -1,0 +1,108 @@
+dataset_name: reviews
+source_file: reviews.csv
+description: >
+  Product reviews submitted by users against an order line. One row per
+  review.
+
+grain: One row per review_id.
+
+primary_key:
+  - review_id
+
+foreign_keys:
+  - column: order_id
+    references_dataset: orders
+    references_column: order_id
+  - column: product_id
+    references_dataset: products
+    references_column: product_id
+  - column: user_id
+    references_dataset: users
+    references_column: user_id
+    source_notes: >
+      Redundant with orders.user_id (the reviewed order's user). Carried
+      forward from the Step 1 "user_id redundancy across related
+      datasets" finding.
+
+columns:
+  - name: review_id
+    data_type: string
+    nullable: false
+    constraints:
+      - unique
+      - pattern: "^R[0-9]{8}$"
+    source_notes: "15,000 rows, 15,000 distinct values (100% unique)."
+
+  - name: order_id
+    data_type: string
+    nullable: false
+    constraints:
+      - pattern: "^O[0-9]{8}$"
+    source_notes: "100% resolve to an existing orders.order_id (0 orphans)."
+
+  - name: product_id
+    data_type: string
+    nullable: false
+    constraints:
+      - pattern: "^P[0-9]{6}$"
+    source_notes: "100% resolve to an existing products.product_id (0 orphans)."
+
+  - name: user_id
+    data_type: string
+    nullable: false
+    constraints:
+      - pattern: "^U[0-9]{6}$"
+    source_notes: >
+      100% match the user_id on the referenced order (0 mismatches
+      observed when joined via order_id).
+
+  - name: rating
+    data_type: integer
+    nullable: false
+    constraints:
+      - min: 1
+      - max: 5
+
+  - name: review_text
+    data_type: string
+    nullable: false
+    constraints: []
+    source_notes: >
+      ANOMALY: only 10 distinct values observed across 15,000 rows
+      (extremely low cardinality for free text), suggesting the source
+      data is synthetic/templated rather than organic user-written text.
+      Flagged for awareness; not corrected here per Task 4 (Preserve
+      Source Truth).
+
+  - name: review_date
+    data_type: timestamp
+    nullable: false
+    constraints:
+      - format: ISO8601
+
+known_data_quality_findings:
+  - id: reviews_on_non_completed_orders
+    description: >
+      A large majority of reviews (roughly 80% in the profiled extract)
+      reference orders whose order_status is NOT "completed" (spread
+      across shipped, returned, cancelled, and processing). This
+      confirms the Step 1 finding that reviews are associated with
+      cancelled/processing (and other non-completed) orders. Per Task 3,
+      this is documented as a business/data-quality rule for a later
+      layer and is explicitly NOT enforced as a schema constraint here,
+      since no source or business requirement establishes "a review must
+      belong to a completed order" as a hard rule.
+  - id: duplicate_order_product_user_natural_key
+    description: >
+      6 rows share the same (order_id, product_id, user_id) combination
+      as another row. 12 rows share the same (user_id, product_id)
+      combination (possibly across different orders). Carried forward
+      from the Step 1 "duplicate natural-key observations" finding; not
+      enforced as a uniqueness constraint here.
+  - id: no_change_tracking_column
+    description: >
+      No updated_at / change-tracking column exists for edited reviews.
+
+deferred_business_rules:
+  - "Review must belong to a completed order (explicitly deferred — not a schema rule per Task 3 guidance)."
+  - "One review per (user_id, product_id, order_id) uniqueness (deferred to Data Quality; 6 violations observed)."

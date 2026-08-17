@@ -1,0 +1,77 @@
+dataset_name: products
+source_file: products.csv
+description: >
+  Product catalog. One row per product. Referenced by order_items, reviews,
+  and events.
+
+grain: One row per product_id.
+
+primary_key:
+  - product_id
+
+foreign_keys: []
+
+columns:
+  - name: product_id
+    data_type: string
+    nullable: false
+    constraints:
+      - unique
+      - pattern: "^P[0-9]{6}$"
+    source_notes: "2,000 rows, 2,000 distinct values (100% unique)."
+
+  - name: product_name
+    data_type: string
+    nullable: false
+    constraints: []
+    source_notes: >
+      Not unique (1,848 distinct values across 2,000 rows) — expected,
+      not a data-quality issue.
+
+  - name: category
+    data_type: string
+    nullable: false
+    constraints:
+      - accepted_values:
+          [Clothing, Toys, Pet Supplies, Beauty, Electronics,
+           "Home & Kitchen", Books, Automotive, Groceries, Sports]
+    accepted_values:
+      [Clothing, Toys, Pet Supplies, Beauty, Electronics,
+       "Home & Kitchen", Books, Automotive, Groceries, Sports]
+
+  - name: brand
+    data_type: string
+    nullable: false
+    constraints:
+      - accepted_values:
+          [Astra, NeoTech, Acme, Nimbus, Zenith, Harbor, GreenLeaf,
+           Willow, Orion, Everest, Solace, Pulse]
+    accepted_values:
+      [Astra, NeoTech, Acme, Nimbus, Zenith, Harbor, GreenLeaf,
+       Willow, Orion, Everest, Solace, Pulse]
+
+  - name: price
+    data_type: decimal
+    nullable: false
+    constraints:
+      - min: 0
+        exclusive: true
+    source_notes: "Observed range in profiled extract: 1.11 to 2338.13."
+
+  - name: rating
+    data_type: decimal
+    nullable: false
+    constraints:
+      - min: 0
+      - max: 5
+    source_notes: >
+      Product-level static/aggregate rating field present directly on the
+      source file (observed range 2.5-4.9). Whether this figure is meant
+      to reconcile against reviews.rating is a business question deferred
+      to the Data Quality layer — it is NOT enforced as a schema
+      cross-field rule here.
+
+known_data_quality_findings: []
+
+deferred_business_rules:
+  - "Reconciliation of products.rating against aggregated reviews.rating (deferred to Data Quality)."

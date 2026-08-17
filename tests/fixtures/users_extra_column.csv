@@ -1,0 +1,2 @@
+user_id,name,email,gender,city,signup_date,loyalty_tier
+U000001,Test One,test1@example.com,Male,Testville,2024-01-01,gold

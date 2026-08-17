@@ -1,0 +1,96 @@
+dataset_name: order_items
+source_file: order_items.csv
+description: >
+  Line items belonging to an order. One row per product line within an
+  order. Child entity of orders.
+
+grain: One row per order_item_id (i.e. one row per product line within an order).
+
+primary_key:
+  - order_item_id
+
+foreign_keys:
+  - column: order_id
+    references_dataset: orders
+    references_column: order_id
+  - column: product_id
+    references_dataset: products
+    references_column: product_id
+  - column: user_id
+    references_dataset: users
+    references_column: user_id
+    source_notes: >
+      Redundant with orders.user_id (the owning order's user). Carried
+      forward from the Step 1 "user_id redundancy across related
+      datasets" finding. Not removed or deduplicated here per Task 4/
+      Preserve Source Truth.
+
+columns:
+  - name: order_item_id
+    data_type: string
+    nullable: false
+    constraints:
+      - unique
+      - pattern: "^I[0-9]{8}$"
+    source_notes: "43,525 rows, 43,525 distinct values (100% unique)."
+
+  - name: order_id
+    data_type: string
+    nullable: false
+    constraints:
+      - pattern: "^O[0-9]{8}$"
+    source_notes: "100% resolve to an existing orders.order_id (0 orphans)."
+
+  - name: product_id
+    data_type: string
+    nullable: false
+    constraints:
+      - pattern: "^P[0-9]{6}$"
+    source_notes: "100% resolve to an existing products.product_id (0 orphans)."
+
+  - name: user_id
+    data_type: string
+    nullable: false
+    constraints:
+      - pattern: "^U[0-9]{6}$"
+    source_notes: >
+      100% match the user_id on the parent order (0 mismatches observed
+      when joined via order_id).
+
+  - name: quantity
+    data_type: integer
+    nullable: false
+    constraints:
+      - min: 0
+        exclusive: true
+    source_notes: "Observed values: 1, 2, 3."
+
+  - name: item_price
+    data_type: decimal
+    nullable: false
+    constraints:
+      - min: 0
+        exclusive: true
+
+  - name: item_total
+    data_type: decimal
+    nullable: false
+    constraints:
+      - min: 0
+        exclusive: true
+
+known_data_quality_findings:
+  - id: duplicate_order_product_natural_key
+    description: >
+      29 rows share the same (order_id, product_id) combination as
+      another row in the profiled extract — i.e. the same product
+      appears as more than one line item within the same order. This may
+      be a legitimate business scenario (separate cart additions) rather
+      than an error, so it is documented as an observation, not enforced
+      as a uniqueness constraint on (order_id, product_id). Carried
+      forward from the Step 1 "duplicate natural-key observations"
+      finding.
+
+deferred_business_rules:
+  - "item_total == quantity * item_price (verified 0 mismatches in the profiled extract; deferred to Data Quality as a cross-field arithmetic rule)."
+  - "sum(item_total) per order_id == orders.total_amount (verified 0 mismatches in the profiled extract; deferred to Data Quality as a cross-dataset reconciliation rule)."

@@ -1,0 +1,71 @@
+dataset_name: users
+source_file: users.csv
+description: >
+  Registered platform users. One row per user. Source of truth for user
+  identity attributes referenced by orders, order_items, reviews, and events.
+
+grain: One row per user_id.
+
+primary_key:
+  - user_id
+
+foreign_keys: []
+
+columns:
+  - name: user_id
+    data_type: string
+    nullable: false
+    constraints:
+      - unique
+      - pattern: "^U[0-9]{6}$"
+    source_notes: >
+      Surrogate natural key issued by the source system. 10,000 rows,
+      10,000 distinct values in the profiled extract (100% unique).
+
+  - name: name
+    data_type: string
+    nullable: false
+    constraints: []
+    source_notes: >
+      Free-text display name. Not unique (9,340 distinct values across
+      10,000 rows) — this is expected and not a data-quality issue.
+
+  - name: email
+    data_type: string
+    nullable: false
+    constraints:
+      - unique
+    source_notes: >
+      100% unique in the profiled extract. Treated as a candidate natural
+      key for the user entity, but user_id remains the registered primary
+      key per the Step 1 grain determination.
+
+  - name: gender
+    data_type: string
+    nullable: false
+    constraints:
+      - accepted_values: [Male, Female, Other]
+    accepted_values: [Male, Female, Other]
+
+  - name: city
+    data_type: string
+    nullable: false
+    constraints: []
+
+  - name: signup_date
+    data_type: date
+    nullable: false
+    constraints:
+      - format: "YYYY-MM-DD"
+
+known_data_quality_findings:
+  - id: no_change_tracking_column
+    description: >
+      No updated_at / change-tracking column exists on this source. Any
+      change-data-capture or incremental-load strategy for users must be
+      designed around this limitation. Carried forward from the Step 1
+      assessment; not enforced as a schema rule here.
+
+deferred_business_rules:
+  - "Email format / domain validity checks (deferred to Data Quality layer)."
+  - "Cross-dataset uniqueness assumptions about email deferred to Data Quality."

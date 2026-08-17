@@ -1,0 +1,2 @@
+user_id,name,email,gender,city,signup_date
+U000001,,test1@example.com,Unknown,Testville,not-a-date
