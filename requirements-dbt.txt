@@ -1,0 +1,7 @@
+# dbt dependencies for the Staging/Curated/Marts layers (warehouse/dbt/).
+# Install into the project venv alongside requirements.txt:
+#   pip install -r requirements-dbt.txt
+#
+# Requires Python 3.14: dbt-core >= 1.12 (3.14 support added in 1.12).
+dbt-core==1.12.2
+dbt-postgres==1.11.0

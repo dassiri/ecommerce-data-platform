@@ -1,0 +1,54 @@
+version: 2
+
+# Raw/Landing layer sources — loaded by Python ingestion (Step 3.3.3/3.3.4).
+# Descriptions and grain are taken from ingestion/contracts/* and
+# docs/architecture/raw_schema.md. No freshness rules are defined in the
+# approved architecture or contracts, so none are configured here.
+
+sources:
+  - name: raw
+    description: >
+      PostgreSQL Raw/Landing layer. Unmodified, structurally-typed copy of
+      each source CSV plus ingestion metadata (DEC-004). See
+      docs/architecture/raw_schema.md.
+    database: ecommerce_dw
+    schema: raw
+    tables:
+      - name: users
+        description: >
+          Registered platform users. One row per user. Source of truth for
+          user identity attributes referenced by orders, order_items,
+          reviews, and events. Grain: one row per user_id (source may
+          contain duplicate natural keys; not deduplicated in Raw).
+        identifier: users
+
+      - name: products
+        description: >
+          Product catalog. One row per product. Referenced by order_items,
+          reviews, and events. Grain: one row per product_id.
+        identifier: products
+
+      - name: orders
+        description: >
+          Customer orders. One row per order. Parent entity for order_items
+          and referenced by reviews. Grain: one row per order_id.
+        identifier: orders
+
+      - name: order_items
+        description: >
+          Line items belonging to an order. One row per product line within
+          an order. Child entity of orders. Grain: one row per order_item_id.
+        identifier: order_items
+
+      - name: reviews
+        description: >
+          Product reviews submitted by users against an order line. One row
+          per review. Grain: one row per review_id.
+        identifier: reviews
+
+      - name: events
+        description: >
+          User interaction events against products (view/cart/wishlist/
+          purchase click-stream style events). One row per event. Grain:
+          one row per event_id.
+        identifier: events

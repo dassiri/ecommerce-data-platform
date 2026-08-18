@@ -1,0 +1,31 @@
+# dbt project — E-Commerce Data Platform (Staging / Curated / Marts)
+# Scope: project scaffold only. Staging models are added under models/staging/.
+#
+# Run dbt from this directory (warehouse/dbt/) with:
+#   dbt <command> --profiles-dir profiles
+
+name: ecommerce_dw
+version: 1.0.0
+config-version: 2
+
+profile: ecommerce_dw
+
+model-paths: ["models"]
+target-path: target
+clean-targets:
+  - target
+  - dbt_packages
+
+models:
+  ecommerce_dw:
+    staging:
+      +materialized: view
+    curated:
+      +schema: curated
+      +materialized: table
+    marts:
+      +schema: marts
+      +materialized: table
+    consumption:
+      +schema: consumption
+      +materialized: table

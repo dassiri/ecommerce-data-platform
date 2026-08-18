@@ -1,0 +1,20 @@
+# dbt connection profile template (PostgreSQL / ecommerce_dw).
+# Copy this file to profiles/profiles.yml and fill in real values locally.
+# Do not commit profiles/profiles.yml — treat it like .env.
+#
+# Usage (from warehouse/dbt/):
+#   dbt debug --profiles-dir profiles
+#   dbt run --profiles-dir profiles
+
+ecommerce_dw:
+  target: dev
+  outputs:
+    dev:
+      type: postgres
+      host: localhost
+      port: 5432
+      user: ""
+      password: ""
+      dbname: ecommerce_dw
+      schema: staging
+      threads: 4

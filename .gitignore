@@ -10,3 +10,12 @@ data/raw_source/*.csv
 
 # Local environment configuration (real credentials) — never commit.
 .env
+
+# Local dbt profile (real credentials) — never commit.
+warehouse/dbt/profiles/profiles.yml
+warehouse/dbt/profiles/.user.yml
+
+# dbt build artifacts and logs
+warehouse/dbt/target/
+warehouse/dbt/logs/
+*.log
