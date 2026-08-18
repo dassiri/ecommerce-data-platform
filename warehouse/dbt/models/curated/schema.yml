@@ -1,0 +1,110 @@
+version: 2
+
+models:
+  - name: dim_users
+    description: >
+      User dimension. One row per registered platform user. Grain: user_id.
+    columns:
+      - name: user_id
+        data_tests:
+          - not_null
+          - unique
+
+  - name: dim_products
+    description: >
+      Product dimension. One row per catalog product. Grain: product_id.
+    columns:
+      - name: product_id
+        data_tests:
+          - not_null
+          - unique
+
+  - name: dim_orders
+    description: >
+      Order dimension. One row per customer order. Grain: order_id.
+    columns:
+      - name: order_id
+        data_tests:
+          - not_null
+          - unique
+      - name: user_id
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('dim_users')
+              field: user_id
+
+  - name: fct_order_items
+    description: >
+      Order line-item fact. One row per order_item_id.
+    columns:
+      - name: order_item_id
+        data_tests:
+          - not_null
+          - unique
+      - name: order_id
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('dim_orders')
+              field: order_id
+      - name: product_id
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('dim_products')
+              field: product_id
+      - name: user_id
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('dim_users')
+              field: user_id
+
+  - name: fct_reviews
+    description: >
+      Product review fact. One row per review_id.
+    columns:
+      - name: review_id
+        data_tests:
+          - not_null
+          - unique
+      - name: order_id
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('dim_orders')
+              field: order_id
+      - name: product_id
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('dim_products')
+              field: product_id
+      - name: user_id
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('dim_users')
+              field: user_id
+
+  - name: fct_events
+    description: >
+      User interaction event fact. One row per event_id.
+    columns:
+      - name: event_id
+        data_tests:
+          - not_null
+          - unique
+      - name: user_id
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('dim_users')
+              field: user_id
+      - name: product_id
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('dim_products')
+              field: product_id
